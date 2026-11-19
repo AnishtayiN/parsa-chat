@@ -2,161 +2,335 @@
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>چت پارسا</title>
 <style>
   :root {
-    --bg:#0f1115; --panel:#171a21; --panel2:#13161d; --border:#262b36; --border2:#2c3342;
-    --text:#e8eaf0; --muted:#9aa3b2; --accent:#3e63dd; --accent2:#3358c4; --mine:#27407c; --mineb:#35539c;
-    --other:#1d212b; --otherb:#2a3040; --chip:#1f2531; --ok:#46a758; --bad:#e5484d;
+    --bg:#0c0e13; --bg2:#11141c; --panel:rgba(23,26,34,.92); --panel-solid:#171a22; --panel2:#151923;
+    --border:#262c3a; --border2:#303950; --text:#eef1f8; --muted:#98a2b8; --faint:#6b7590;
+    --accent:#4f7cff; --accent2:#3a63e0; --accent-grad:linear-gradient(135deg,#4f7cff,#7a5cff);
+    --mine-grad:linear-gradient(135deg,#2b4ea8,#3a63e0); --mineb:#4769c4;
+    --other:#1c212e; --otherb:#2a3145; --chip:#1f2534; --ok:#3fb96b; --bad:#f0506e; --warn:#ffb224;
+    --shadow:0 6px 24px rgba(0,0,0,.38); --radius:16px;
   }
   body.light {
-    --bg:#f4f6fb; --panel:#ffffff; --panel2:#eef1f8; --border:#dde3ef; --border2:#c9d2e4;
-    --text:#1a1e28; --muted:#667085; --accent:#3e63dd; --accent2:#3358c4; --mine:#dbe7ff; --mineb:#b3c8f5;
-    --other:#ffffff; --otherb:#dde3ef; --chip:#eef1f8;
+    --bg:#eef1f8; --bg2:#e6ebf5; --panel:rgba(255,255,255,.94); --panel-solid:#ffffff; --panel2:#f2f5fb;
+    --border:#dde3ef; --border2:#c4cfe4; --text:#171c28; --muted:#5f6b84; --faint:#8a94ab;
+    --mine-grad:linear-gradient(135deg,#4f7cff,#7a5cff); --mineb:#4f7cff;
+    --other:#ffffff; --otherb:#dde3ef; --chip:#edf1f9; --shadow:0 6px 24px rgba(40,60,120,.14);
   }
-  * { box-sizing:border-box; margin:0; padding:0; }
+  * { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
   html, body { height:100%; }
-  body { font-family:Tahoma,"Segoe UI",Arial,sans-serif; background:var(--bg); color:var(--text); display:flex; flex-direction:column; height:100dvh; }
-  header { background:var(--panel); border-bottom:1px solid var(--border); padding:8px 12px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  header h1 { font-size:16px; }
-  .dot { width:10px; height:10px; border-radius:50%; background:var(--bad); flex:none; }
-  .dot.on { background:var(--ok); }
-  .meta { font-size:12px; color:var(--muted); }
+  body {
+    font-family:Tahoma,"Segoe UI",Arial,sans-serif; color:var(--text);
+    background:var(--bg); display:flex; flex-direction:column; height:100dvh; overflow:hidden;
+  }
+  body::before {
+    content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(600px 300px at 85% -5%, rgba(79,124,255,.14), transparent 60%),
+      radial-gradient(500px 260px at 5% 105%, rgba(122,92,255,.12), transparent 60%);
+  }
+  #app { position:relative; z-index:1; display:flex; flex-direction:column; height:100%; width:100%; margin:0 auto; }
+  @media (min-width:1100px) { #app { max-width:1060px; border-left:1px solid var(--border); border-right:1px solid var(--border); box-shadow:var(--shadow); } }
+  @media (min-width:641px) and (max-width:1099px) { #app { max-width:820px; } }
+
+  svg.ic { width:19px; height:19px; flex:none; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; vertical-align:middle; }
+  button { font-family:inherit; cursor:pointer; }
+  .iconbtn {
+    width:38px; height:38px; border-radius:12px; border:1px solid var(--border2);
+    background:var(--panel2); color:var(--text); display:inline-flex; align-items:center; justify-content:center;
+    transition:background .15s, transform .1s; flex:none;
+  }
+  .iconbtn:hover { background:var(--chip); }
+  .iconbtn:active { transform:scale(.94); }
+  .iconbtn.rec { background:var(--bad); border-color:var(--bad); color:#fff; animation:pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity:.65; } }
+  input, textarea, select {
+    font-family:inherit; font-size:14px; border-radius:12px; border:1px solid var(--border2);
+    background:var(--panel2); color:var(--text); padding:9px 12px; outline:none; transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(79,124,255,.22); }
+  .primary {
+    background:var(--accent-grad); border:none; color:#fff; font-weight:bold; border-radius:12px;
+    padding:9px 18px; font-size:14px; transition:filter .15s, transform .1s; flex:none;
+  }
+  .primary:hover { filter:brightness(1.1); }
+  .primary:active { transform:scale(.96); }
+  .ghostbtn { background:transparent; border:1px solid var(--border2); color:var(--text); border-radius:12px; padding:8px 14px; font-size:13.5px; }
+
+  header {
+    background:var(--panel); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--border); padding:8px 12px; display:flex; flex-direction:column; gap:8px;
+  }
+  .hrow { display:flex; align-items:center; gap:8px; }
+  .logo {
+    width:38px; height:38px; border-radius:12px; background:var(--accent-grad); color:#fff;
+    display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(79,124,255,.4); flex:none;
+  }
+  .logo svg { width:21px; height:21px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+  .htitle { display:flex; flex-direction:column; min-width:0; }
+  .htitle h1 { font-size:16px; line-height:1.2; white-space:nowrap; }
+  .statuspill { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dot { width:8px; height:8px; border-radius:50%; background:var(--bad); flex:none; transition:background .2s; }
+  .dot.on { background:var(--ok); box-shadow:0 0 8px rgba(63,185,107,.7); }
   .spacer { flex:1; }
-  input, button, select { font-family:inherit; font-size:14px; border-radius:10px; border:1px solid var(--border2); background:var(--panel2); color:var(--text); padding:8px 11px; }
-  input:focus { outline:2px solid var(--accent); border-color:transparent; }
-  button { background:var(--accent); border-color:var(--accent); color:#fff; cursor:pointer; font-weight:bold; }
-  button:hover { background:var(--accent2); }
-  button.ghost { background:transparent; color:var(--text); font-weight:normal; }
-  button.icon { padding:7px 9px; font-size:15px; }
-  #pinned { display:none; background:var(--panel2); border-bottom:1px solid var(--border); padding:7px 12px; font-size:13px; align-items:center; gap:8px; }
-  #pinned.show { display:flex; }
-  #pinned .txt { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .setuprow { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+  .setuprow input { flex:1 1 110px; min-width:90px; }
+  @media (max-width:640px) {
+    .setuprow { display:none; }
+    .setuprow.show { display:flex; }
+    .htitle h1 { font-size:15px; }
+    .iconbtn { width:36px; height:36px; }
+  }
+  #connbanner {
+    display:none; background:linear-gradient(90deg,#8a5a00,#b97d10); color:#fff; font-size:12.5px;
+    padding:6px 12px; text-align:center; align-items:center; justify-content:center; gap:8px;
+  }
+  #connbanner.show { display:flex; }
+  .spinner { width:14px; height:14px; border:2px solid rgba(255,255,255,.35); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; flex:none; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  #roomchips { display:none; gap:6px; padding:7px 12px; background:var(--panel2); border-bottom:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+  #roomchips::-webkit-scrollbar { display:none; }
+  #roomchips.show { display:flex; }
+  .rchip { flex:none; background:var(--chip); border:1px solid var(--border2); color:var(--text); border-radius:999px; padding:4px 13px; font-size:12.5px; }
+  .rchip.active { background:var(--accent-grad); border-color:transparent; color:#fff; font-weight:bold; }
+
   #searchbar { display:none; background:var(--panel2); border-bottom:1px solid var(--border); padding:8px 12px; gap:8px; }
   #searchbar.show { display:flex; }
   #searchbar input { flex:1; }
-  #searchresults { display:none; max-height:180px; overflow-y:auto; background:var(--panel2); border-bottom:1px solid var(--border); padding:6px 12px; font-size:13px; }
+  #searchresults { display:none; max-height:190px; overflow-y:auto; background:var(--panel2); border-bottom:1px solid var(--border); padding:6px 12px; font-size:13px; }
   #searchresults.show { display:block; }
-  .sres { padding:6px 4px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .sres { padding:7px 6px; border-bottom:1px solid var(--border); cursor:pointer; border-radius:8px; }
   .sres:hover { background:var(--chip); }
+
+  #pinned { display:none; background:var(--panel2); border-bottom:1px solid var(--border); padding:7px 12px; font-size:13px; align-items:center; gap:8px; cursor:pointer; }
+  #pinned.show { display:flex; }
+  #pinned .txt { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
+  #pinned .txt b { color:var(--text); }
+
   #users { padding:6px 12px; background:var(--panel2); border-bottom:1px solid var(--border); font-size:12px; color:var(--muted); display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
   .chip { background:var(--chip); border:1px solid var(--border2); border-radius:999px; padding:2px 10px; color:var(--text); display:inline-flex; align-items:center; gap:5px; }
-  .cdot { width:8px; height:8px; border-radius:50%; display:inline-block; }
-  .admin-badge { color:#ffb224; font-size:11px; }
-  #log { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:8px; }
-  .row { display:flex; gap:8px; align-items:flex-end; max-width:88%; }
+  .cdot { width:8px; height:8px; border-radius:50%; display:inline-block; flex:none; }
+  .admin-badge { color:var(--warn); font-size:11px; }
+
+  #logwrap { flex:1; position:relative; display:flex; flex-direction:column; min-height:0; }
+  #log { flex:1; overflow-y:auto; padding:16px 14px 10px; display:flex; flex-direction:column; gap:3px; scroll-behavior:smooth; }
+  #log::-webkit-scrollbar { width:8px; }
+  #log::-webkit-scrollbar-thumb { background:var(--border2); border-radius:99px; }
+  #empty { margin:auto; text-align:center; color:var(--muted); padding:30px 20px; display:none; }
+  #empty.show { display:block; }
+  #empty .big { font-size:52px; margin-bottom:10px; }
+  #empty p { font-size:14px; line-height:1.9; }
+
+  .row { display:flex; gap:8px; align-items:flex-end; max-width:86%; animation:msgIn .22s ease both; }
+  @keyframes msgIn { from { opacity:0; transform:translateY(8px) scale(.98); } to { opacity:1; transform:none; } }
   .row.mine { align-self:flex-end; flex-direction:row-reverse; }
   .row.other { align-self:flex-start; }
-  .avatar { width:32px; height:32px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:bold; font-size:14px; }
-  .msg { padding:8px 12px; border-radius:14px; line-height:1.7; font-size:14.5px; word-wrap:break-word; white-space:pre-wrap; position:relative; min-width:60px; }
-  .msg.other { background:var(--other); border:1px solid var(--otherb); border-bottom-right-radius:4px; }
-  .msg.mine { background:var(--mine); border:1px solid var(--mineb); border-bottom-left-radius:4px; }
-  .msg .who { font-size:11.5px; margin-bottom:2px; font-weight:bold; }
-  .msg .when { font-size:10.5px; color:var(--muted); margin-top:3px; display:flex; gap:6px; justify-content:flex-end; align-items:center; }
+  .row.grouped { margin-top:-1px; }
+  .row.grouped .avatar { visibility:hidden; }
+  .row.grouped .who { display:none; }
+  .avatar {
+    width:34px; height:34px; border-radius:50%; flex:none; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-weight:bold; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,.3);
+  }
+  .msg { padding:8px 12px 6px; border-radius:18px; line-height:1.75; font-size:14.5px; word-wrap:break-word; white-space:pre-wrap; position:relative; min-width:64px; box-shadow:0 2px 10px rgba(0,0,0,.18); }
+  .msg.other { background:var(--other); border:1px solid var(--otherb); border-bottom-right-radius:6px; }
+  .msg.mine { background:var(--mine-grad); border:1px solid var(--mineb); border-bottom-left-radius:6px; color:#fff; }
+  .msg.mine .when, .msg.mine .edited { color:rgba(255,255,255,.75); }
+  .msg .who { font-size:11.5px; margin-bottom:1px; font-weight:bold; }
+  .msg .when { font-size:10.5px; color:var(--muted); margin-top:2px; display:flex; gap:5px; justify-content:flex-end; align-items:center; }
   .msg .edited { font-size:10px; color:var(--muted); }
-  .msg.deleted { color:var(--muted); font-style:italic; }
-  .quote { border-right:3px solid var(--accent); background:rgba(127,127,127,.12); border-radius:6px; padding:4px 8px; margin-bottom:5px; font-size:12.5px; color:var(--muted); cursor:pointer; }
+  .msg.deleted { color:var(--muted); font-style:italic; background:var(--other); border:1px dashed var(--otherb); }
+  .msg a { color:#9db9ff; }
+  body.light .msg a { color:#2b50c8; }
+  .msg.mine a { color:#dbe7ff; }
+  .mention { background:rgba(255,178,36,.28); border-radius:5px; padding:0 3px; font-weight:bold; }
+  .quote { border-right:3px solid var(--accent); background:rgba(127,140,170,.14); border-radius:8px; padding:4px 9px; margin-bottom:5px; font-size:12.5px; color:var(--muted); cursor:pointer; }
   .quote b { color:var(--text); }
-  .msg img.pic { max-width:260px; max-height:260px; border-radius:10px; display:block; cursor:pointer; }
-  .msg audio { width:230px; height:36px; }
-  .filelink { color:#8fb0ff; text-decoration:none; font-weight:bold; }
+  .msg.mine .quote { color:rgba(255,255,255,.8); } .msg.mine .quote b { color:#fff; }
+  .msg img.pic { max-width:270px; max-height:270px; border-radius:12px; display:block; cursor:zoom-in; }
+  .msg audio { width:235px; height:38px; max-width:100%; }
+  .filecard { display:flex; align-items:center; gap:10px; background:rgba(127,140,170,.13); border:1px solid var(--border2); border-radius:12px; padding:8px 12px; text-decoration:none; color:inherit; }
+  .filecard .fname { font-weight:bold; font-size:13.5px; word-break:break-all; }
+  .filecard .fsub { font-size:11px; color:var(--muted); }
   .reactions { display:flex; gap:4px; flex-wrap:wrap; margin-top:5px; }
-  .react { background:var(--chip); border:1px solid var(--border2); border-radius:999px; padding:1px 8px; font-size:12.5px; cursor:pointer; }
-  .react.mine { border-color:var(--accent); background:rgba(62,99,221,.25); }
-  .actions { display:none; position:absolute; top:-14px; left:6px; background:var(--panel); border:1px solid var(--border2); border-radius:999px; padding:2px 4px; gap:2px; box-shadow:0 2px 10px rgba(0,0,0,.35); z-index:5; }
-  .msg:hover .actions, .msg:focus-within .actions { display:flex; }
-  .actions button { background:transparent; border:none; color:var(--text); font-size:13px; padding:3px 6px; font-weight:normal; }
-  .actions button:hover { background:var(--chip); border-radius:999px; }
-  .sys { align-self:center; font-size:12px; color:var(--muted); background:var(--panel); border:1px solid var(--border); border-radius:999px; padding:3px 12px; }
-  .datesep { align-self:center; font-size:11.5px; color:var(--muted); margin:6px 0 2px; }
-  .unreadsep { align-self:center; font-size:11.5px; color:#ffb224; border:1px solid #ffb22455; border-radius:999px; padding:2px 12px; }
-  .highlight { outline:2px solid #ffb224; }
-  #typing { padding:4px 14px; font-size:12px; color:var(--muted); min-height:20px; background:var(--bg); }
+  .react { background:var(--chip); border:1px solid var(--border2); border-radius:999px; padding:1px 8px; font-size:12.5px; cursor:pointer; transition:transform .1s; }
+  .react:hover { transform:scale(1.08); }
+  .react.mine { border-color:var(--accent); background:rgba(79,124,255,.28); }
+  .actions {
+    display:none; position:absolute; top:-16px; left:6px; background:var(--panel-solid); border:1px solid var(--border2);
+    border-radius:999px; padding:2px 4px; gap:1px; box-shadow:var(--shadow); z-index:6;
+  }
+  .msg:hover .actions, .msg.showacts .actions { display:flex; }
+  .actions button { background:transparent; border:none; color:var(--text); font-size:14px; padding:4px 6px; border-radius:999px; }
+  .actions button:hover { background:var(--chip); }
+  .sys { align-self:center; font-size:12px; color:var(--muted); background:var(--panel-solid); border:1px solid var(--border); border-radius:999px; padding:3px 13px; margin:4px 0; }
+  .datesep { align-self:center; font-size:11.5px; color:var(--muted); background:var(--panel2); border:1px solid var(--border); border-radius:999px; padding:2px 12px; margin:10px 0 6px; }
+  .unreadsep { align-self:center; font-size:11.5px; color:var(--warn); border:1px solid rgba(255,178,36,.4); border-radius:999px; padding:2px 13px; margin:6px 0; }
+  .highlight { outline:2px solid var(--warn); outline-offset:2px; }
+  #fab {
+    position:absolute; bottom:14px; left:14px; width:42px; height:42px; border-radius:50%;
+    background:var(--panel-solid); border:1px solid var(--border2); color:var(--text);
+    display:none; align-items:center; justify-content:center; box-shadow:var(--shadow); z-index:8;
+  }
+  #fab.show { display:flex; }
+  #fabbadge { position:absolute; top:-5px; right:-5px; background:var(--bad); color:#fff; font-size:10.5px; font-weight:bold; border-radius:999px; min-width:19px; height:19px; display:none; align-items:center; justify-content:center; padding:0 5px; }
+
+  #typing { padding:3px 16px; font-size:12px; color:var(--muted); min-height:21px; }
+  #typing .tdots span { display:inline-block; width:5px; height:5px; border-radius:50%; background:var(--muted); margin:0 1px; animation:blink 1.2s infinite; }
+  #typing .tdots span:nth-child(2) { animation-delay:.2s; } #typing .tdots span:nth-child(3) { animation-delay:.4s; }
+  @keyframes blink { 0%,80%,100% { opacity:.25; } 40% { opacity:1; } }
+
   #replybar { display:none; background:var(--panel2); border-top:1px solid var(--border); padding:7px 12px; font-size:13px; align-items:center; gap:8px; }
   #replybar.show { display:flex; }
   #replybar .txt { flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:var(--muted); }
-  #emojipanel { display:none; background:var(--panel); border-top:1px solid var(--border); padding:10px; flex-wrap:wrap; gap:4px; max-height:170px; overflow-y:auto; }
+  #emojipanel { display:none; background:var(--panel-solid); border-top:1px solid var(--border); padding:10px; flex-wrap:wrap; gap:2px; max-height:180px; overflow-y:auto; }
   #emojipanel.show { display:flex; }
-  #emojipanel button { background:transparent; border:none; font-size:21px; padding:4px; cursor:pointer; }
-  footer { padding:10px 12px; background:var(--panel); border-top:1px solid var(--border); display:flex; gap:6px; align-items:center; }
-  #text { flex:1; }
-  #members { position:fixed; top:0; left:0; bottom:0; width:270px; background:var(--panel); border-left:1px solid var(--border); z-index:50; padding:14px; display:none; flex-direction:column; gap:8px; overflow-y:auto; }
-  #members.show { display:flex; }
+  #emojipanel button { background:transparent; border:none; font-size:22px; padding:5px; border-radius:10px; }
+  #emojipanel button:hover { background:var(--chip); }
+
+  footer {
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom)); background:var(--panel); backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px); border-top:1px solid var(--border); display:flex; gap:7px; align-items:flex-end;
+  }
+  #text { flex:1; resize:none; max-height:130px; line-height:1.6; overflow-y:auto; }
+  #send { width:44px; height:44px; border-radius:14px; background:var(--accent-grad); border:none; color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 4px 14px rgba(79,124,255,.4); flex:none; transition:transform .1s, filter .15s; }
+  #send:hover { filter:brightness(1.12); } #send:active { transform:scale(.93); }
+  #send svg { width:20px; height:20px; stroke:#fff; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transform:scaleX(-1); }
+
+  #members {
+    position:fixed; top:0; left:0; bottom:0; width:min(300px,86vw); background:var(--panel-solid);
+    border-left:1px solid var(--border); z-index:60; padding:16px; display:flex; flex-direction:column; gap:8px;
+    overflow-y:auto; transform:translateX(-105%); transition:transform .25s ease; box-shadow:var(--shadow);
+  }
+  #members.show { transform:none; }
   #members h3 { font-size:15px; }
-  .memrow { display:flex; align-items:center; gap:8px; padding:6px 4px; border-bottom:1px solid var(--border); font-size:14px; }
+  .memrow { display:flex; align-items:center; gap:8px; padding:7px 4px; border-bottom:1px solid var(--border); font-size:14px; }
   .memrow .sp { flex:1; }
-  .kickbtn { background:transparent; border:1px solid var(--bad); color:var(--bad); font-size:12px; padding:3px 8px; }
-  #toast { position:fixed; bottom:84px; right:50%; transform:translateX(50%); background:var(--panel); border:1px solid var(--border2); color:var(--text); border-radius:10px; padding:9px 16px; font-size:13.5px; display:none; z-index:99; box-shadow:0 4px 18px rgba(0,0,0,.4); }
-  .rec { background:var(--bad) !important; border-color:var(--bad) !important; }
-  @media (max-width:560px) { .row { max-width:96%; } header h1 { font-size:14px; } .msg img.pic { max-width:200px; } }
+  .kickbtn { background:transparent; border:1px solid var(--bad); color:var(--bad); font-size:12px; padding:3px 9px; border-radius:9px; }
+  #scrim { position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:55; display:none; }
+  #scrim.show { display:block; }
+
+  #ctxmenu {
+    position:fixed; z-index:80; background:var(--panel-solid); border:1px solid var(--border2); border-radius:14px;
+    box-shadow:var(--shadow); padding:5px; display:none; min-width:190px;
+  }
+  #ctxmenu.show { display:block; animation:msgIn .15s ease both; }
+  #ctxmenu .qreact { display:flex; gap:2px; padding:4px 6px 7px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+  #ctxmenu .qreact button { background:transparent; border:none; font-size:19px; padding:3px 5px; border-radius:9px; }
+  #ctxmenu .qreact button:hover { background:var(--chip); }
+  #ctxmenu .item { display:flex; align-items:center; gap:9px; width:100%; background:transparent; border:none; color:var(--text); font-size:13.5px; padding:8px 10px; border-radius:9px; text-align:right; }
+  #ctxmenu .item:hover { background:var(--chip); }
+  #ctxmenu .item.danger { color:var(--bad); }
+
+  #lightbox { position:fixed; inset:0; background:rgba(0,0,0,.88); z-index:90; display:none; align-items:center; justify-content:center; padding:18px; }
+  #lightbox.show { display:flex; }
+  #lightbox img { max-width:100%; max-height:100%; border-radius:12px; box-shadow:var(--shadow); }
+
+  #toast {
+    position:fixed; bottom:96px; right:50%; transform:translateX(50%); background:var(--panel-solid);
+    border:1px solid var(--border2); color:var(--text); border-radius:12px; padding:10px 18px;
+    font-size:13.5px; display:none; z-index:99; box-shadow:var(--shadow); max-width:88vw; text-align:center;
+  }
+  @media (max-width:640px) {
+    .row { max-width:94%; }
+    .msg img.pic { max-width:215px; }
+    #log { padding:12px 10px 8px; }
+    footer { gap:5px; padding:8px 8px calc(8px + env(safe-area-inset-bottom)); }
+    .iconbtn { width:36px; height:36px; border-radius:11px; }
+    #send { width:42px; height:42px; }
+  }
 </style>
 </head>
 <body>
+<div id="app">
 <header>
-  <span class="dot" id="dot"></span>
-  <h1>چت پارسا</h1>
-  <span class="meta" id="status">قطع</span>
-  <span class="spacer"></span>
-  <button class="ghost icon" id="btn-search" title="جستجو">🔍</button>
-  <button class="ghost icon" id="btn-members" title="اعضا">👥</button>
-  <button class="ghost icon" id="btn-theme" title="تم">🌓</button>
-  <button class="ghost icon" id="btn-sound" title="صدا">🔔</button>
-  <input id="name" placeholder="اسمت" maxlength="24" style="width:110px">
-  <input id="room" placeholder="اسم روم" maxlength="32" style="width:110px">
-  <input id="pass" type="password" placeholder="رمز روم" maxlength="64" style="width:100px">
-  <button id="join">ورود</button>
+  <div class="hrow">
+    <div class="logo"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></div>
+    <div class="htitle">
+      <h1>چت پارسا</h1>
+      <span class="statuspill"><span class="dot" id="dot"></span><span id="status">قطع</span></span>
+    </div>
+    <span class="spacer"></span>
+    <button class="iconbtn" id="btn-search" title="جستجو"><svg class="ic" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></button>
+    <button class="iconbtn" id="btn-members" title="اعضا"><svg class="ic" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button>
+    <button class="iconbtn" id="btn-theme" title="تم روشن/تاریک"><svg class="ic" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg></button>
+    <button class="iconbtn" id="btn-sound" title="صدا و نوتیفیکیشن"><svg class="ic" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></button>
+    <button class="iconbtn" id="btn-setup" title="تنظیمات ورود"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+  </div>
+  <div class="setuprow" id="setuprow">
+    <input id="name" placeholder="اسمت" maxlength="24">
+    <input id="room" placeholder="اسم روم" maxlength="32">
+    <input id="pass" type="password" placeholder="رمز روم (اگه داره)" maxlength="64">
+    <button class="primary" id="join">ورود</button>
+  </div>
 </header>
+<div id="connbanner"><span class="spinner"></span><span id="conntext">اتصال قطع شد — در حال اتصال دوباره…</span></div>
+<div id="roomchips"></div>
 <div id="searchbar">
   <input id="searchq" placeholder="جستجو در پیام‌ها…">
-  <button id="dosearch">جستجو</button>
-  <button class="ghost" id="closesearch">بستن</button>
+  <button class="primary" id="dosearch">جستجو</button>
+  <button class="ghostbtn" id="closesearch">بستن</button>
 </div>
 <div id="searchresults"></div>
-<div id="pinned"><span>📌</span><span class="txt" id="pinnedtxt"></span><button class="ghost icon" id="unpinbtn" title="برداشتن سنجاق">✖</button></div>
+<div id="pinned"><span>📌</span><span class="txt" id="pinnedtxt"></span><button class="iconbtn" id="unpinbtn" title="برداشتن سنجاق" style="width:30px;height:30px"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
 <div id="users"><span>آنلاین‌ها:</span><span id="chips"></span></div>
-<div id="log"></div>
+<div id="logwrap">
+  <div id="log">
+    <div id="empty"><div class="big">💬</div><p>هنوز پیامی نیست.<br>اولین پیام رو تو بفرست!</p></div>
+  </div>
+  <button id="fab" title="رفتن به آخرین پیام"><svg class="ic" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg><span id="fabbadge"></span></button>
+</div>
 <div id="typing"></div>
-<div id="replybar"><span id="replylabel">↩️ پاسخ به:</span><span class="txt" id="replytxt"></span><button class="ghost icon" id="cancelreply">✖</button></div>
+<div id="replybar"><span id="replylabel">↩️ پاسخ به:</span><span class="txt" id="replytxt"></span><button class="iconbtn" id="cancelreply" style="width:30px;height:30px"><svg class="ic" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
 <div id="emojipanel"></div>
 <footer>
-  <button class="ghost icon" id="btn-emoji" title="ایموجی">😀</button>
-  <button class="ghost icon" id="btn-img" title="عکس">🖼️</button>
-  <button class="ghost icon" id="btn-file" title="فایل">📎</button>
-  <button class="ghost icon" id="btn-voice" title="پیام صوتی">🎤</button>
-  <input id="text" placeholder="پیامت رو بنویس…" maxlength="2000" autocomplete="off">
-  <button id="send">ارسال</button>
+  <button class="iconbtn" id="btn-emoji" title="ایموجی"><svg class="ic" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+  <button class="iconbtn" id="btn-img" title="عکس"><svg class="ic" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></button>
+  <button class="iconbtn" id="btn-file" title="فایل"><svg class="ic" viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg></button>
+  <button class="iconbtn" id="btn-voice" title="پیام صوتی"><svg class="ic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+  <textarea id="text" placeholder="پیامت رو بنویس…" maxlength="2000" rows="1" autocomplete="off"></textarea>
+  <button id="send" title="ارسال"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
   <input type="file" id="imginput" accept="image/*" style="display:none">
   <input type="file" id="fileinput" style="display:none">
 </footer>
+</div>
+<div id="scrim"></div>
 <div id="members">
   <h3>اعضای روم</h3>
   <div id="memlist"></div>
-  <div id="adminbox" style="display:none; flex-direction:column; gap:8px; margin-top:10px;">
+  <div id="adminbox" style="display:none; flex-direction:column; gap:8px; margin-top:12px;">
     <h3>مدیریت (ادمین)</h3>
     <input id="newpass" type="password" placeholder="رمز جدید روم (خالی = حذف رمز)" maxlength="64">
-    <button id="setpass">تنظیم رمز</button>
+    <button class="primary" id="setpass">تنظیم رمز</button>
   </div>
-  <button class="ghost" id="closemembers">بستن</button>
+  <button class="ghostbtn" id="closemembers" style="margin-top:10px">بستن</button>
 </div>
+<div id="ctxmenu"></div>
+<div id="lightbox"><img id="lightimg" alt="عکس بزرگ"></div>
 <div id="toast"></div>
 <script>
 (function () {
   var $ = function (id) { return document.getElementById(id); };
   var log = $("log"), dot = $("dot"), statusEl = $("status"), chips = $("chips");
   var nameInput = $("name"), roomInput = $("room"), passInput = $("pass"), textInput = $("text");
-  var typingEl = $("typing"), toastEl = $("toast");
+  var typingEl = $("typing"), toastEl = $("toast"), fab = $("fab"), fabbadge = $("fabbadge");
   var ws = null, myName = "", myRole = "member", retryMs = 1000, reconnectTimer = null;
   var messagesById = {}, membersByName = {}, lastMsgId = 0, lastSeenSent = 0;
   var replyToId = null, editId = null, typingUsers = {}, typingTimer = null, lastTypingSent = 0;
   var soundOn = localStorage.getItem("pc_sound") !== "0";
-  var oldestId = null, loadingOlder = false, lastDateKey = "";
-  var roomKey = "";
+  var oldestId = null, loadingOlder = false, lastDateKey = "", lastSender = "", lastTs = 0;
+  var roomKey = "", unreadCount = 0, ctxMsgId = null, longPressTimer = null;
 
   if (localStorage.getItem("pc_theme") === "light") document.body.classList.add("light");
   nameInput.value = localStorage.getItem("pc_name") || "";
   roomInput.value = localStorage.getItem("pc_room") || "عمومی";
-  $("btn-sound").textContent = soundOn ? "🔔" : "🔕";
 
   function toast(t) {
     toastEl.textContent = t; toastEl.style.display = "block";
@@ -168,8 +342,10 @@
       var ctx = new (window.AudioContext || window.webkitAudioContext)();
       var o = ctx.createOscillator(), g = ctx.createGain();
       o.connect(g); g.connect(ctx.destination);
-      o.frequency.value = 880; g.gain.value = 0.08;
-      o.start(); o.stop(ctx.currentTime + 0.12);
+      o.frequency.setValueAtTime(880, ctx.currentTime);
+      o.frequency.setValueAtTime(1174, ctx.currentTime + 0.09);
+      g.gain.value = 0.07;
+      o.start(); o.stop(ctx.currentTime + 0.18);
     } catch (e) {}
   }
   function fmtTime(ts) {
@@ -181,8 +357,11 @@
     return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
   }
   function fmtDate(ts) {
+    var today = dateKey(Date.now()), yest = dateKey(Date.now() - 86400000), k = dateKey(ts);
+    if (k === today) return "امروز";
+    if (k === yest) return "دیروز";
     try { return new Date(ts).toLocaleDateString("fa-IR", { weekday: "long", day: "numeric", month: "long" }); }
-    catch (e) { return dateKey(ts); }
+    catch (e) { return k; }
   }
   function colorOf(name) {
     var m = membersByName[name];
@@ -191,16 +370,42 @@
     var h = 0; for (var i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
     return pal[h % pal.length];
   }
-  function scrollDown() { log.scrollTop = log.scrollHeight; }
-  function nearBottom() { return log.scrollHeight - log.scrollTop - log.clientHeight < 160; }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function richText(s) {
+    var out = esc(s);
+    out = out.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    if (myName) {
+      var pat = new RegExp("@" + myName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g");
+      out = out.replace(pat, '<span class="mention">@' + esc(myName) + "</span>");
+    }
+    return out;
+  }
+  function scrollDown(smooth) {
+    if (smooth) log.scrollTo({ top: log.scrollHeight, behavior: "smooth" });
+    else log.scrollTop = log.scrollHeight;
+    hideFab();
+  }
+  function nearBottom() { return log.scrollHeight - log.scrollTop - log.clientHeight < 180; }
+  function showFab() {
+    fab.classList.add("show");
+    if (unreadCount > 0) { fabbadge.style.display = "flex"; fabbadge.textContent = unreadCount > 99 ? "99+" : unreadCount; }
+    else fabbadge.style.display = "none";
+  }
+  function hideFab() { fab.classList.remove("show"); unreadCount = 0; fabbadge.style.display = "none"; }
+  fab.addEventListener("click", function () { scrollDown(true); sendSeen(); });
 
-  function maybeDateSep(ts, prepend) {
+  function maybeDateSep(ts) {
     var k = dateKey(ts);
     if (k === lastDateKey) return;
-    lastDateKey = k;
+    lastDateKey = k; lastSender = "";
     var div = document.createElement("div");
     div.className = "datesep"; div.textContent = fmtDate(ts);
-    if (prepend) log.insertBefore(div, log.firstChild); else log.appendChild(div);
+    log.appendChild(div);
+  }
+  function updateEmpty() {
+    $("empty").classList.toggle("show", !log.querySelector(".row"));
   }
 
   function reactionHtml(m) {
@@ -208,13 +413,12 @@
     var html = '<div class="reactions">';
     m.reactions.forEach(function (r) {
       var mine = r.users.indexOf(myName) >= 0;
-      html += '<span class="react' + (mine ? " mine" : "") + '" data-react="' + r.emoji + '" title="' + r.users.join("، ") + '">' + r.emoji + " " + r.count + "</span>";
+      html += '<span class="react' + (mine ? " mine" : "") + '" data-react="' + r.emoji + '" title="' + esc(r.users.join("، ")) + '">' + r.emoji + " " + r.count + "</span>";
     });
     return html + "</div>";
   }
-
   function msgBodyHtml(m) {
-    if (m.deleted) return '<div class="msg deleted">این پیام حذف شده</div>';
+    if (m.deleted) return "<div>این پیام حذف شده</div>";
     var html = "";
     if (m.replyTo && messagesById[m.replyTo]) {
       var q = messagesById[m.replyTo];
@@ -223,15 +427,11 @@
     }
     if (m.kind === "image") html += '<img class="pic" src="data:image/jpeg;base64,' + m.data + '" alt="عکس">';
     else if (m.kind === "voice") html += '<audio controls src="data:audio/webm;base64,' + m.data + '"></audio>';
-    else if (m.kind === "file") html += '<a class="filelink" download="' + esc(m.text || "file") + '" href="data:application/octet-stream;base64,' + m.data + '">📎 ' + esc(m.text || "فایل") + "</a>";
-    else html += "<div>" + esc(m.text) + "</div>";
-    if (m.kind !== "text" && m.text && m.kind !== "file") html += "<div>" + esc(m.text) + "</div>";
+    else if (m.kind === "file") html += '<a class="filecard" download="' + esc(m.text || "file") + '" href="data:application/octet-stream;base64,' + m.data + '"><span style="font-size:22px">📎</span><span><span class="fname">' + esc(m.text || "فایل") + '</span><br><span class="fsub">برای دانلود کلیک کن</span></span></a>';
+    else html += "<div>" + richText(m.text) + "</div>";
+    if (m.kind !== "text" && m.kind !== "file" && m.text) html += "<div>" + richText(m.text) + "</div>";
     return html;
   }
-  function esc(s) {
-    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-  }
-
   function seenTicks(m) {
     if (m.name !== myName) return "";
     var others = Object.keys(membersByName).filter(function (n) { return n !== myName; });
@@ -239,16 +439,20 @@
     var allSeen = others.every(function (n) { return (membersByName[n].last_seen_id || 0) >= m.id; });
     return allSeen ? "✓✓" : "✓";
   }
-
   function renderMsg(m, prepend) {
     messagesById[m.id] = m;
     if (m.id > lastMsgId) lastMsgId = m.id;
     if (oldestId === null || m.id < oldestId) oldestId = m.id;
     var existing = document.querySelector('[data-mid="' + m.id + '"]');
+    var wasGrouped = existing && existing.classList.contains("grouped");
     if (existing) existing.remove();
     var mine = m.name === myName;
+    var grouped = wasGrouped;
+    if (!prepend && !existing) {
+      grouped = (m.name === lastSender && (m.ts - lastTs) < 120000 && dateKey(m.ts) === lastDateKey);
+    }
     var row = document.createElement("div");
-    row.className = "row " + (mine ? "mine" : "other");
+    row.className = "row " + (mine ? "mine" : "other") + (grouped ? " grouped" : "");
     row.setAttribute("data-mid", m.id);
     var av = document.createElement("div");
     av.className = "avatar"; av.style.background = colorOf(m.name);
@@ -270,16 +474,18 @@
       var firstRow = log.querySelector(".row");
       if (firstRow) log.insertBefore(row, firstRow); else log.appendChild(row);
     } else {
-      maybeDateSep(m.ts, false);
+      maybeDateSep(m.ts);
       log.appendChild(row);
+      lastSender = m.name; lastTs = m.ts;
     }
+    updateEmpty();
     return row;
   }
-
   function addSys(text) {
     var div = document.createElement("div");
     div.className = "sys"; div.textContent = text;
-    log.appendChild(div); if (nearBottom()) scrollDown();
+    log.appendChild(div); lastSender = "";
+    if (nearBottom()) scrollDown();
   }
   function setPresence(users) {
     chips.innerHTML = "";
@@ -310,9 +516,9 @@
     var bar = $("pinned");
     if (!m) { bar.classList.remove("show"); return; }
     var t = m.kind === "text" ? m.text : (m.kind === "image" ? "🖼️ عکس" : m.kind === "voice" ? "🎤 پیام صوتی" : "📎 " + m.text);
-    $("pinnedtxt").textContent = m.name + ": " + t;
+    $("pinnedtxt").innerHTML = "<b>" + esc(m.name) + ":</b> " + esc(t);
     bar.classList.add("show");
-    bar.onclick = function (e) { if (e.target.id !== "unpinbtn") jumpTo(m.id); };
+    bar.onclick = function (e) { if (!e.target.closest("#unpinbtn")) jumpTo(m.id); };
   }
   function jumpTo(id) {
     var el = document.querySelector('[data-mid="' + id + '"]');
@@ -324,17 +530,38 @@
   }
   function updateTyping() {
     var names = Object.keys(typingUsers).filter(function (n) { return typingUsers[n]; });
-    typingEl.textContent = names.length ? names.join("، ") + " داره می‌نویسه…" : "";
+    typingEl.innerHTML = names.length ? esc(names.join("، ")) + ' داره می‌نویسه <span class="tdots"><span></span><span></span><span></span></span>' : "";
   }
   function setStatus(on, label) {
     dot.className = "dot" + (on ? " on" : "");
     statusEl.textContent = label;
+    $("connbanner").classList.toggle("show", !on && !!ws);
+    if (!on) $("conntext").textContent = label === "دسترسی رد شد" ? "دسترسی رد شد — رمز روم رو چک کن" : "اتصال قطع شد — در حال اتصال دوباره…";
   }
   function sendSeen() {
     if (!ws || ws.readyState !== 1 || lastMsgId <= lastSeenSent) return;
     lastSeenSent = lastMsgId;
     ws.send(JSON.stringify({ type: "seen", upToId: lastMsgId }));
     if (roomKey) localStorage.setItem("pc_seen_" + roomKey, String(lastMsgId));
+  }
+  function renderRoomChips() {
+    var rooms = [];
+    try { rooms = JSON.parse(localStorage.getItem("pc_rooms") || "[]"); } catch (e) {}
+    var box = $("roomchips"); box.innerHTML = "";
+    rooms.forEach(function (r) {
+      var b = document.createElement("button");
+      b.className = "rchip" + (r === roomKey ? " active" : "");
+      b.textContent = r;
+      b.onclick = function () { roomInput.value = r; connect(); };
+      box.appendChild(b);
+    });
+    box.classList.toggle("show", rooms.length > 1);
+  }
+  function rememberRoom(r) {
+    var rooms = [];
+    try { rooms = JSON.parse(localStorage.getItem("pc_rooms") || "[]"); } catch (e) {}
+    rooms = [r].concat(rooms.filter(function (x) { return x !== r; })).slice(0, 8);
+    localStorage.setItem("pc_rooms", JSON.stringify(rooms));
   }
 
   function handle(d) {
@@ -358,8 +585,7 @@
     else if (d.type === "older") {
       loadingOlder = false;
       var prevHeight = log.scrollHeight;
-      var list = d.messages.slice().reverse();
-      list.forEach(function (m) { renderMsg(m, true); });
+      d.messages.slice().reverse().forEach(function (m) { renderMsg(m, true); });
       log.scrollTop = log.scrollHeight - prevHeight;
     }
     else if (d.type === "msg") {
@@ -367,9 +593,11 @@
       renderMsg(d.message, false);
       if (d.message.name !== myName) {
         beep();
+        var mentioned = myName && d.message.kind === "text" && d.message.text.indexOf("@" + myName) >= 0;
         if (document.hidden && window.Notification && Notification.permission === "granted") {
           try { new Notification("چت پارسا — " + d.message.name, { body: d.message.kind === "text" ? d.message.text : "پیام جدید" }); } catch (e) {}
         }
+        if (!stick) { unreadCount++; showFab(); if (mentioned) toast(d.message.name + " تو رو منشن کرد"); }
       }
       if (stick) scrollDown();
       sendSeen();
@@ -416,9 +644,11 @@
     roomKey = room;
     localStorage.setItem("pc_name", myName);
     localStorage.setItem("pc_room", room);
+    rememberRoom(room); renderRoomChips();
     if (ws) { try { ws.close(); } catch (e) {} ws = null; }
     if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
-    log.innerHTML = ""; messagesById = {}; oldestId = null; lastMsgId = 0; lastSeenSent = 0; lastDateKey = ""; typingUsers = {}; updateTyping();
+    log.innerHTML = '<div id="empty"><div class="big">💬</div><p>هنوز پیامی نیست.<br>اولین پیام رو تو بفرست!</p></div>';
+    messagesById = {}; oldestId = null; lastMsgId = 0; lastSeenSent = 0; lastDateKey = ""; lastSender = ""; typingUsers = {}; updateTyping(); hideFab();
     var url = "wss://parsa-chat.massagetoanishtayin.workers.dev/ws?room=" + encodeURIComponent(room) + "&name=" + encodeURIComponent(myName);
     if (passInput.value) url += "&pass=" + encodeURIComponent(passInput.value);
     setStatus(false, "در حال اتصال…");
@@ -435,6 +665,10 @@
     ws.onerror = function () { try { ws.close(); } catch (e) {} };
   }
 
+  function autoGrow() {
+    textInput.style.height = "auto";
+    textInput.style.height = Math.min(textInput.scrollHeight, 130) + "px";
+  }
   function sendText() {
     var t = textInput.value.trim();
     if (!t || !ws || ws.readyState !== 1) return;
@@ -447,7 +681,7 @@
       ws.send(JSON.stringify(payload));
       cancelReply();
     }
-    textInput.value = "";
+    textInput.value = ""; autoGrow();
     sendTyping(false);
     textInput.focus();
   }
@@ -473,56 +707,120 @@
     $("replylabel").textContent = "✏️ ویرایش پیام:";
     $("replytxt").textContent = m.text;
     $("replybar").classList.add("show");
-    textInput.value = m.text; textInput.focus();
+    textInput.value = m.text; autoGrow(); textInput.focus();
+  }
+  function doAction(act, id) {
+    if (act === "reply") startReply(id);
+    else if (act === "edit") startEdit(id);
+    else if (act === "delete") { if (confirm("این پیام حذف بشه؟")) ws.send(JSON.stringify({ type: "delete", id: id })); }
+    else if (act === "pin") ws.send(JSON.stringify({ type: "pin", id: id }));
+    else if (act === "copy") {
+      var m = messagesById[id];
+      if (m && navigator.clipboard) navigator.clipboard.writeText(m.text || "").then(function () { toast("کپی شد"); });
+    }
+    else if (act === "react") {
+      var emojis = ["❤️","😂","👍","🔥","😮","😢","🎉","👏"];
+      var pick = prompt("ایموجی رو انتخاب کن: " + emojis.join("  "));
+      if (pick) ws.send(JSON.stringify({ type: "react", id: id, emoji: pick.trim().slice(0, 8) }));
+    }
   }
 
+  // ---------- context menu ----------
+  var ctxmenu = $("ctxmenu");
+  function hideCtx() { ctxmenu.classList.remove("show"); ctxMsgId = null; }
+  function showCtx(x, y, id) {
+    var m = messagesById[id]; if (!m) return;
+    ctxMsgId = id;
+    var mine = m.name === myName;
+    var q = ["❤️","😂","👍","🔥","😮","😢"].map(function (e) {
+      return '<button data-qreact="' + e + '">' + e + "</button>";
+    }).join("");
+    var items =
+      '<div class="qreact">' + q + "</div>" +
+      '<button class="item" data-cact="reply">↩️ پاسخ</button>' +
+      (m.kind === "text" && !m.deleted ? '<button class="item" data-cact="copy">📋 کپی متن</button>' : "") +
+      (mine && m.kind === "text" && !m.deleted ? '<button class="item" data-cact="edit">✏️ ویرایش</button>' : "") +
+      (myRole === "admin" && !m.deleted ? '<button class="item" data-cact="pin">📌 سنجاق</button>' : "") +
+      ((mine || myRole === "admin") && !m.deleted ? '<button class="item danger" data-cact="delete">🗑️ حذف</button>' : "");
+    ctxmenu.innerHTML = items;
+    ctxmenu.classList.add("show");
+    var w = 200, h = ctxmenu.offsetHeight || 240;
+    ctxmenu.style.left = Math.max(8, Math.min(x, window.innerWidth - w - 8)) + "px";
+    ctxmenu.style.top = Math.max(8, Math.min(y, window.innerHeight - h - 8)) + "px";
+  }
+  ctxmenu.addEventListener("click", function (e) {
+    var qr = e.target.closest("[data-qreact]");
+    if (qr && ctxMsgId) {
+      ws.send(JSON.stringify({ type: "react", id: ctxMsgId, emoji: qr.getAttribute("data-qreact") }));
+      hideCtx(); return;
+    }
+    var it = e.target.closest("[data-cact]");
+    if (it && ctxMsgId) { var id = ctxMsgId; hideCtx(); doAction(it.getAttribute("data-cact"), id); }
+  });
+  document.addEventListener("click", function (e) { if (!e.target.closest("#ctxmenu")) hideCtx(); });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") { hideCtx(); $("lightbox").classList.remove("show"); } });
+
   log.addEventListener("click", function (e) {
-    var row = e.target.closest(".row");
     var jump = e.target.closest("[data-jump]");
     if (jump) { jumpTo(parseInt(jump.getAttribute("data-jump"), 10)); return; }
+    var pic = e.target.closest("img.pic");
+    if (pic) { $("lightimg").src = pic.src; $("lightbox").classList.add("show"); return; }
+    var row = e.target.closest(".row");
     var react = e.target.closest("[data-react]");
     if (react && row) {
       ws.send(JSON.stringify({ type: "react", id: parseInt(row.getAttribute("data-mid"), 10), emoji: react.getAttribute("data-react") }));
       return;
     }
     var btn = e.target.closest("[data-act]");
-    if (!btn || !row) return;
-    var id = parseInt(row.getAttribute("data-mid"), 10);
-    var act = btn.getAttribute("data-act");
-    if (act === "reply") startReply(id);
-    else if (act === "edit") startEdit(id);
-    else if (act === "delete") { if (confirm("این پیام حذف بشه؟")) ws.send(JSON.stringify({ type: "delete", id: id })); }
-    else if (act === "pin") ws.send(JSON.stringify({ type: "pin", id: id }));
-    else if (act === "react") {
-      var emojis = ["❤️","😂","👍","🔥","😮","😢","🎉","👏"];
-      var pick = prompt("ایموجی رو انتخاب کن: " + emojis.join("  "));
-      if (pick) ws.send(JSON.stringify({ type: "react", id: id, emoji: pick.trim().slice(0, 8) }));
+    if (btn && row) { doAction(btn.getAttribute("data-act"), parseInt(row.getAttribute("data-mid"), 10)); return; }
+    if (row) {
+      var msg = row.querySelector(".msg");
+      var was = msg.classList.contains("showacts");
+      log.querySelectorAll(".msg.showacts").forEach(function (x) { x.classList.remove("showacts"); });
+      if (!was) msg.classList.add("showacts");
     }
   });
+  log.addEventListener("contextmenu", function (e) {
+    var row = e.target.closest(".row");
+    if (row) { e.preventDefault(); showCtx(e.clientX, e.clientY, parseInt(row.getAttribute("data-mid"), 10)); }
+  });
+  log.addEventListener("touchstart", function (e) {
+    var row = e.target.closest(".row");
+    if (!row) return;
+    var t = e.touches[0];
+    longPressTimer = setTimeout(function () { showCtx(t.clientX, t.clientY, parseInt(row.getAttribute("data-mid"), 10)); }, 550);
+  }, { passive: true });
+  log.addEventListener("touchend", function () { clearTimeout(longPressTimer); });
+  log.addEventListener("touchmove", function () { clearTimeout(longPressTimer); }, { passive: true });
   log.addEventListener("scroll", function () {
     if (log.scrollTop < 60 && !loadingOlder && oldestId && ws && ws.readyState === 1) {
       loadingOlder = true;
       ws.send(JSON.stringify({ type: "history_before", beforeId: oldestId }));
     }
-    if (nearBottom()) sendSeen();
+    if (nearBottom()) { hideFab(); sendSeen(); } else showFab();
   });
+  $("lightbox").addEventListener("click", function () { $("lightbox").classList.remove("show"); });
 
   textInput.addEventListener("input", function () {
+    autoGrow();
     sendTyping(true);
     clearTimeout(typingTimer);
     typingTimer = setTimeout(function () { sendTyping(false); }, 2500);
   });
-  textInput.addEventListener("keydown", function (e) { if (e.key === "Enter") sendText(); });
+  textInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendText(); }
+  });
   $("send").addEventListener("click", sendText);
   $("join").addEventListener("click", connect);
-  $("cancelreply").addEventListener("click", function () { cancelReply(); editId = null; textInput.value = ""; });
+  $("cancelreply").addEventListener("click", function () { cancelReply(); editId = null; textInput.value = ""; autoGrow(); });
   $("unpinbtn").addEventListener("click", function (e) { e.stopPropagation(); if (ws) ws.send(JSON.stringify({ type: "unpin" })); });
+  $("btn-setup").addEventListener("click", function () { $("setuprow").classList.toggle("show"); });
 
-  var EMOJIS = ["😀","😂","😍","😎","😭","😡","👍","👎","❤️","🔥","🎉","👏","🙏","💯","🤔","😴","🤯","🥳","😇","🤝","👋","💪","🌹","⭐","⚽","🏆","☕","🍕","🎵","🚗"];
+  var EMOJIS = ["😀","😂","😍","😎","😭","😡","👍","👎","❤️","🔥","🎉","👏","🙏","💯","🤔","😴","🤯","🥳","😇","🤝","👋","💪","🌹","⭐","⚽","🏆","☕","🍕","🎵","🚗","😅","🙂","😉","😋","🤣","😏","😐","😱","🥺","😤","🤗","🫡","💔","💖","✨","🌙","☀️","🎂"];
   var panel = $("emojipanel");
   EMOJIS.forEach(function (em) {
     var b = document.createElement("button"); b.textContent = em;
-    b.onclick = function () { textInput.value += em; textInput.focus(); };
+    b.onclick = function () { textInput.value += em; autoGrow(); textInput.focus(); };
     panel.appendChild(b);
   });
   $("btn-emoji").addEventListener("click", function () { panel.classList.toggle("show"); });
@@ -533,7 +831,7 @@
   $("btn-sound").addEventListener("click", function () {
     soundOn = !soundOn;
     localStorage.setItem("pc_sound", soundOn ? "1" : "0");
-    $("btn-sound").textContent = soundOn ? "🔔" : "🔕";
+    toast(soundOn ? "صدا روشن شد" : "صدا خاموش شد");
     if (soundOn && window.Notification && Notification.permission === "default") Notification.requestPermission();
   });
   $("btn-search").addEventListener("click", function () { $("searchbar").classList.toggle("show"); $("searchq").focus(); });
@@ -543,8 +841,11 @@
     if (q && ws) ws.send(JSON.stringify({ type: "search", q: q }));
   });
   $("searchq").addEventListener("keydown", function (e) { if (e.key === "Enter") $("dosearch").click(); });
-  $("btn-members").addEventListener("click", function () { renderMembers(); $("members").classList.add("show"); });
-  $("closemembers").addEventListener("click", function () { $("members").classList.remove("show"); });
+  function openMembers() { renderMembers(); $("members").classList.add("show"); $("scrim").classList.add("show"); }
+  function closeMembers() { $("members").classList.remove("show"); $("scrim").classList.remove("show"); }
+  $("btn-members").addEventListener("click", openMembers);
+  $("closemembers").addEventListener("click", closeMembers);
+  $("scrim").addEventListener("click", closeMembers);
   $("memlist").addEventListener("click", function (e) {
     var k = e.target.closest("[data-kick]");
     if (k && confirm("«" + k.getAttribute("data-kick") + "» اخراج بشه؟")) {
@@ -595,7 +896,7 @@
       recorder.ondataavailable = function (e) { recChunks.push(e.data); };
       recorder.onstop = function () {
         stream.getTracks().forEach(function (t) { t.stop(); });
-        $("btn-voice").classList.remove("rec"); $("btn-voice").textContent = "🎤";
+        $("btn-voice").classList.remove("rec");
         var blob = new Blob(recChunks, { type: "audio/webm" });
         if (blob.size > 1000000) { toast("پیام صوتی خیلی طولانیه"); return; }
         var r = new FileReader();
@@ -606,11 +907,13 @@
         r.readAsDataURL(blob);
       };
       recorder.start();
-      $("btn-voice").classList.add("rec"); $("btn-voice").textContent = "⏹️";
+      $("btn-voice").classList.add("rec");
+      toast("در حال ضبط… برای توقف دوباره بزن");
       setTimeout(function () { if (recorder && recorder.state === "recording") recorder.stop(); }, 60000);
     }).catch(function () { toast("اجازه میکروفون داده نشد"); });
   });
 
+  renderRoomChips();
   connect();
 })();
 </script>

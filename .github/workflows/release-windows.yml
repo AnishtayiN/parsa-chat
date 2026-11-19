@@ -1,0 +1,33 @@
+name: Build Windows installer and upload to release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to upload the installer to"
+        required: true
+        default: "v2.1.0"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Build installer
+        working-directory: windows
+        run: |
+          npm ci
+          npm run dist:win
+      - name: Upload to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          $exe = Get-ChildItem windows/dist/ParsaChat-Setup-*.exe | Select-Object -First 1
+          gh release upload "${{ inputs.tag }}" $exe.FullName --clobber

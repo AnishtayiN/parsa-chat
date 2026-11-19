@@ -1,0 +1,284 @@
+// Parsa Chat — realtime chat room server
+// Cloudflare Worker + Durable Objects (SQLite) + WebSocket Hibernation API
+// Serves: web client at /, WebSocket at /ws?room=<room>&name=<name>, /health
+
+const VERSION = "1.0.0";
+const MAX_HISTORY_SEND = 50;   // messages sent to a client on join
+const MAX_HISTORY_KEEP = 500;  // messages kept per room
+const MAX_TEXT_LEN = 1000;
+const MAX_NAME_LEN = 24;
+const MAX_ROOM_LEN = 32;
+
+function cleanText(s, maxLen, fallback) {
+  if (typeof s !== "string") return fallback;
+  const t = s.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, maxLen);
+  return t || fallback;
+}
+
+export class ChatRoom {
+  constructor(ctx, env) {
+    this.ctx = ctx;
+    this.sql = ctx.storage.sql;
+    this.sql.exec(
+      "CREATE TABLE IF NOT EXISTS messages (" +
+      "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+      "name TEXT NOT NULL, text TEXT NOT NULL, ts INTEGER NOT NULL)"
+    );
+  }
+
+  async fetch(request) {
+    const pair = new WebSocketPair();
+    const client = pair[0];
+    const server = pair[1];
+    const url = new URL(request.url);
+    const name = cleanText(url.searchParams.get("name"), MAX_NAME_LEN, "مهمان");
+
+    this.ctx.acceptWebSocket(server);
+    server.serializeAttachment({ name });
+
+    const rows = this.sql
+      .exec("SELECT name, text, ts FROM messages ORDER BY id DESC LIMIT ?", MAX_HISTORY_SEND)
+      .toArray()
+      .reverse();
+    server.send(JSON.stringify({ type: "history", messages: rows }));
+
+    this.broadcastPresence();
+    this.broadcast({ type: "system", text: name + " وارد شد" }, server);
+
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(ws, message) {
+    let data;
+    try { data = JSON.parse(message); } catch { return; }
+    if (!data || data.type !== "msg" || typeof data.text !== "string") return;
+    const text = data.text.trim().slice(0, MAX_TEXT_LEN);
+    if (!text) return;
+    const att = ws.deserializeAttachment() || {};
+    const name = att.name || "مهمان";
+    const ts = Date.now();
+    this.sql.exec("INSERT INTO messages (name, text, ts) VALUES (?, ?, ?)", name, text, ts);
+    this.sql.exec(
+      "DELETE FROM messages WHERE id NOT IN (SELECT id FROM messages ORDER BY id DESC LIMIT ?)",
+      MAX_HISTORY_KEEP
+    );
+    this.broadcast({ type: "msg", name, text, ts });
+  }
+
+  async webSocketClose(ws) {
+    const att = ws.deserializeAttachment() || {};
+    if (att.name) this.broadcast({ type: "system", text: att.name + " خارج شد" }, ws);
+    this.broadcastPresence(ws);
+  }
+
+  async webSocketError(ws) {
+    this.broadcastPresence(ws);
+  }
+
+  broadcast(obj, except) {
+    const s = JSON.stringify(obj);
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws === except) continue;
+      try { ws.send(s); } catch { /* socket gone */ }
+    }
+  }
+
+  broadcastPresence(except) {
+    const users = [];
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws === except) continue;
+      const att = ws.deserializeAttachment() || {};
+      users.push(att.name || "مهمان");
+    }
+    this.broadcast({ type: "presence", users }, except);
+  }
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/ws") {
+      if (request.headers.get("Upgrade") !== "websocket") {
+        return new Response("Expected WebSocket upgrade", { status: 426 });
+      }
+      const room = cleanText(url.searchParams.get("room"), MAX_ROOM_LEN, "عمومی");
+      const id = env.CHAT_ROOM.idFromName(room);
+      const stub = env.CHAT_ROOM.get(id);
+      return stub.fetch(request);
+    }
+
+    if (url.pathname === "/health") {
+      return Response.json({ ok: true, app: "parsa-chat", version: VERSION });
+    }
+
+    if (url.pathname === "/" || url.pathname === "/index.html") {
+      return new Response(WEB_HTML, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    return new Response("Not found", { status: 404 });
+  },
+};
+
+// ---------------- Web client (served at /) ----------------
+const WEB_HTML = `<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>چت پارسا</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: Tahoma, "Segoe UI", Arial, sans-serif;
+    background: #0f1115; color: #e8eaf0;
+    display: flex; flex-direction: column; height: 100dvh;
+  }
+  header {
+    background: #171a21; border-bottom: 1px solid #262b36;
+    padding: 10px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 17px; font-weight: bold; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #e5484d; flex: none; }
+  .dot.on { background: #46a758; }
+  .meta { font-size: 12px; color: #9aa3b2; }
+  .spacer { flex: 1; }
+  .setup { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  input, button {
+    font-family: inherit; font-size: 14px; border-radius: 10px;
+    border: 1px solid #2c3342; background: #1d212b; color: #e8eaf0; padding: 9px 12px;
+  }
+  input:focus { outline: 2px solid #3e63dd; border-color: transparent; }
+  button { background: #3e63dd; border-color: #3e63dd; color: #fff; cursor: pointer; font-weight: bold; }
+  button:hover { background: #3358c4; }
+  button.ghost { background: transparent; border-color: #2c3342; color: #c9d1e0; font-weight: normal; }
+  #users {
+    padding: 7px 14px; background: #13161d; border-bottom: 1px solid #222836;
+    font-size: 12px; color: #9aa3b2; display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .chip { background: #1f2531; border: 1px solid #2c3342; border-radius: 999px; padding: 2px 10px; color: #d6dce8; }
+  #log { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 82%; padding: 8px 12px; border-radius: 14px; line-height: 1.7; font-size: 14.5px; word-wrap: break-word; white-space: pre-wrap; }
+  .msg .who { font-size: 11.5px; color: #8fb0ff; margin-bottom: 2px; font-weight: bold; }
+  .msg .when { font-size: 10.5px; color: #7c8598; margin-top: 3px; text-align: left; }
+  .msg.other { background: #1d212b; border: 1px solid #2a3040; align-self: flex-start; border-bottom-right-radius: 4px; }
+  .msg.mine { background: #27407c; border: 1px solid #35539c; align-self: flex-end; border-bottom-left-radius: 4px; }
+  .sys { align-self: center; font-size: 12px; color: #8a93a5; background: #171a21; border: 1px solid #262b36; border-radius: 999px; padding: 3px 12px; }
+  footer { padding: 10px 12px; background: #171a21; border-top: 1px solid #262b36; display: flex; gap: 8px; }
+  #text { flex: 1; }
+  @media (max-width: 560px) { .msg { max-width: 92%; } header h1 { font-size: 15px; } }
+</style>
+</head>
+<body>
+<header>
+  <span class="dot" id="dot"></span>
+  <h1>چت پارسا</h1>
+  <span class="meta" id="status">قطع</span>
+  <span class="spacer"></span>
+  <div class="setup">
+    <input id="name" placeholder="اسمت" maxlength="24" style="width:130px">
+    <input id="room" placeholder="اسم روم" maxlength="32" style="width:130px">
+    <button id="join">ورود</button>
+  </div>
+</header>
+<div id="users"><span>آنلاین‌ها:</span><span id="chips"></span></div>
+<div id="log"></div>
+<footer>
+  <input id="text" placeholder="پیامت رو بنویس…" maxlength="1000" autocomplete="off">
+  <button id="send">ارسال</button>
+</footer>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var log = $("log"), dot = $("dot"), statusEl = $("status"), chips = $("chips");
+  var nameInput = $("name"), roomInput = $("room"), textInput = $("text");
+  var ws = null, myName = "", reconnectTimer = null, retryMs = 1000;
+
+  nameInput.value = localStorage.getItem("pc_name") || "";
+  roomInput.value = localStorage.getItem("pc_room") || "عمومی";
+
+  function fmtTime(ts) {
+    var d = new Date(ts);
+    var h = ("0" + d.getHours()).slice(-2), m = ("0" + d.getMinutes()).slice(-2);
+    return h + ":" + m;
+  }
+  function scrollDown() { log.scrollTop = log.scrollHeight; }
+  function addMsg(name, text, ts) {
+    var div = document.createElement("div");
+    div.className = "msg " + (name === myName ? "mine" : "other");
+    var who = document.createElement("div"); who.className = "who"; who.textContent = name;
+    var body = document.createElement("div"); body.textContent = text;
+    var when = document.createElement("div"); when.className = "when"; when.textContent = fmtTime(ts);
+    div.appendChild(who); div.appendChild(body); div.appendChild(when);
+    log.appendChild(div); scrollDown();
+  }
+  function addSys(text) {
+    var div = document.createElement("div");
+    div.className = "sys"; div.textContent = text;
+    log.appendChild(div); scrollDown();
+  }
+  function setPresence(users) {
+    chips.innerHTML = "";
+    users.forEach(function (u) {
+      var c = document.createElement("span"); c.className = "chip"; c.textContent = u;
+      chips.appendChild(c);
+    });
+    if (!users.length) chips.textContent = "—";
+  }
+  function setStatus(on, label) {
+    dot.className = "dot" + (on ? " on" : "");
+    statusEl.textContent = label;
+  }
+
+  function connect() {
+    myName = nameInput.value.trim() || "مهمان";
+    var room = roomInput.value.trim() || "عمومی";
+    localStorage.setItem("pc_name", myName);
+    localStorage.setItem("pc_room", room);
+    if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+    if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+    log.innerHTML = "";
+    var proto = location.protocol === "https:" ? "wss://" : "ws://";
+    var url = proto + location.host + "/ws?room=" + encodeURIComponent(room) + "&name=" + encodeURIComponent(myName);
+    setStatus(false, "در حال اتصال…");
+    ws = new WebSocket(url);
+    ws.onopen = function () { retryMs = 1000; setStatus(true, "متصل — روم «" + room + "»"); textInput.focus(); };
+    ws.onmessage = function (ev) {
+      var d;
+      try { d = JSON.parse(ev.data); } catch (e) { return; }
+      if (d.type === "history") { d.messages.forEach(function (m) { addMsg(m.name, m.text, m.ts); }); }
+      else if (d.type === "msg") { addMsg(d.name, d.text, d.ts); }
+      else if (d.type === "presence") { setPresence(d.users); }
+      else if (d.type === "system") { addSys(d.text); }
+    };
+    ws.onclose = function () {
+      setStatus(false, "قطع — تلاش دوباره…");
+      reconnectTimer = setTimeout(connect, retryMs);
+      retryMs = Math.min(retryMs * 2, 15000);
+    };
+    ws.onerror = function () { try { ws.close(); } catch (e) {} };
+  }
+
+  function send() {
+    var t = textInput.value.trim();
+    if (!t || !ws || ws.readyState !== 1) return;
+    ws.send(JSON.stringify({ type: "msg", text: t }));
+    textInput.value = "";
+    textInput.focus();
+  }
+
+  $("join").addEventListener("click", connect);
+  $("send").addEventListener("click", send);
+  textInput.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+  nameInput.addEventListener("keydown", function (e) { if (e.key === "Enter") connect(); });
+  roomInput.addEventListener("keydown", function (e) { if (e.key === "Enter") connect(); });
+
+  connect();
+})();
+</script>
+</body>
+</html>
+`;

@@ -1,0 +1,11 @@
+name = "parsa-chat"
+main = "worker.js"
+compatibility_date = "2026-11-19"
+
+[[durable_objects.bindings]]
+name = "CHAT_ROOM"
+class_name = "ChatRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["ChatRoom"]

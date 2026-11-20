@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">چت پارسا</string>
+    <string name="notif_channel">پیام‌ها</string>
+    <string name="back_to_exit">برای خروج دوباره دکمه بازگشت را بزنید</string>
+    <string name="saved_downloads">در پوشه Downloads ذخیره شد: %1$s</string>
+    <string name="saved_path">ذخیره شد: %1$s</string>
+    <string name="save_failed">ذخیره فایل ناموفق بود</string>
+</resources>

@@ -5,6 +5,7 @@ A full-featured realtime chat room that runs **100% free** on Cloudflare:
 - **Server** — Cloudflare Worker + Durable Objects (SQLite storage, WebSocket Hibernation API). Instant delivery, per-room history, presence.
 - **Web client** — served by the Worker itself at `/` (Persian, RTL, dark/light themes).
 - **Windows app** — Electron 22 (last Electron line that still runs on **Windows 7**; also 8/10/11). Source in `windows/`.
+- **Android app** — native WebView shell (Java, no frameworks) running on **Android 5.0+**. Source in `android/`. Signed APK is attached to each release.
 
 ## Features (v2.0)
 
@@ -43,6 +44,23 @@ npm run dist:win
 ```
 
 Electron 22.3.27 is pinned for Windows 7 compatibility. The bundled `index.html` is the same client the Worker serves, with the WebSocket host hardcoded.
+
+## Build the Android app
+
+```bash
+cd android
+./gradlew assembleRelease   # output: app/build/outputs/apk/release/ParsaChat-<version>.apk
+```
+
+Requires JDK 17 and the Android SDK (platform 34). Without signing env vars the APK is debug-signed so it still installs. The app is a WebView shell around the same bundled client (`app/src/main/assets/index.html`, WebSocket host hardcoded), served from a secure `https://appassets.androidplatform.net` origin so **voice messages** work. Native bridges provide:
+
+- microphone permission + `getUserMedia` for voice recording
+- file picker for image/file messages
+- saving received files to the public **Downloads** folder (API 29+) or the app's external Downloads dir (older)
+- native notifications for new messages while the app is in the background (with Persian app name «چت پارسا»)
+- external links open in the browser; back button with press-again-to-exit
+
+CI: the **Build Android APK and upload to release** workflow (manual dispatch, tag input) builds on `ubuntu-latest`, signs with the keystore stored in repo secrets (`ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`) and uploads `ParsaChat-<version>.apk` to the release.
 
 ## Tests
 

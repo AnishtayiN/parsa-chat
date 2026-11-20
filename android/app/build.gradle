@@ -1,0 +1,58 @@
+// Parsa Chat — Android app (WebView shell around the same chat client as web/Windows)
+// minSdk 21 (Android 5.0) through the latest Android.
+plugins {
+    id 'com.android.application'
+}
+
+def ksPath = System.getenv("ANDROID_KEYSTORE_FILE")
+def hasKeystore = ksPath != null && file(ksPath).exists()
+
+android {
+    namespace 'com.anishtayin.parsachat'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.anishtayin.parsachat"
+        minSdk 21
+        targetSdk 34
+        versionCode 210
+        versionName "2.1.0"
+    }
+
+    signingConfigs {
+        release {
+            if (hasKeystore) {
+                storeFile file(ksPath)
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+                storeType "PKCS12"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // CI signs with the real keystore; local builds fall back to debug signing.
+            signingConfig hasKeystore ? signingConfigs.release : signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "ParsaChat-${variant.versionName}.apk"
+        }
+    }
+}
+
+dependencies {
+    // WebViewAssetLoader: serve bundled assets from https://appassets.androidplatform.net
+    // so the page is a secure context (required for getUserMedia voice messages).
+    implementation 'androidx.webkit:webkit:1.10.0'
+}

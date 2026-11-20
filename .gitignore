@@ -3,3 +3,5 @@ dist/
 *.apk
 .gradle/
 build/
+local.properties
+keystore.p12

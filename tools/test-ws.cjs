@@ -4,7 +4,8 @@
 const WebSocket = require("ws");
 const { HttpsProxyAgent } = require("https-proxy-agent");
 
-const BASE = "wss://parsa-chat.massagetoanishtayin.workers.dev/ws";
+const HOST = process.env.PC_HOST || "parsa-chat.massagetoanishtayin.workers.dev";
+const BASE = "wss://" + HOST + "/ws";
 const room = "test-" + Date.now();
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
@@ -44,15 +45,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   console.log("both connected to room:", room);
 
   const pres = await a.waitFor((d) => d.type === "presence" && d.users.length === 2);
-  console.log("presence OK:", pres.users.join(", "));
+  console.log("presence OK:", pres.users.map((u) => u.name).join(", "));
 
   a.ws.send(JSON.stringify({ type: "msg", text: "سلام سارا! 👋" }));
-  const got1 = await b.waitFor((d) => d.type === "msg" && d.name === "علی");
-  console.log("B received from A:", got1.text);
+  const got1 = await b.waitFor((d) => d.type === "msg" && d.message.name === "علی");
+  console.log("B received from A:", got1.message.text);
 
   b.ws.send(JSON.stringify({ type: "msg", text: "سلام علی، رسید!" }));
-  const got2 = await a.waitFor((d) => d.type === "msg" && d.name === "سارا");
-  console.log("A received from B:", got2.text);
+  const got2 = await a.waitFor((d) => d.type === "msg" && d.message.name === "سارا");
+  console.log("A received from B:", got2.message.text);
 
   const c = await connect("رضا");
   const hist = await c.waitFor((d) => d.type === "history");

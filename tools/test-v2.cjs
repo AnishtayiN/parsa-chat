@@ -2,7 +2,7 @@
 const WebSocket = require("ws");
 const { HttpsProxyAgent } = require("https-proxy-agent");
 
-const BASE = "wss://parsa-chat.massagetoanishtayin.workers.dev/ws";
+const BASE = "wss://" + (process.env.PC_HOST || "parsa-chat.massagetoanishtayin.workers.dev") + "/ws";
 const proxy = process.env.HTTPS_PROXY || process.env.https_proxy;
 const agent = proxy ? new HttpsProxyAgent(proxy) : undefined;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -86,7 +86,7 @@ function assert(cond, label) {
   await sleep(600);
   assert(!a.inbox.some((d) => d.type === "pinned"), "non-admin pin ignored");
   a.ws.send(JSON.stringify({ type: "pin", id: m1.message.id }));
-  const pn = await b.waitFor((d) => d.type === "pinned" && d.message && d.message.id === m1.message.id);
+  const pn = await b.waitFor((d) => d.type === "pinned" && d.messages && d.messages.some((m) => m.id === m1.message.id));
   assert(!!pn, "admin pin broadcast");
 
   // search

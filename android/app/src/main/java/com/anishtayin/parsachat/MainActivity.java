@@ -65,7 +65,7 @@ public class MainActivity extends Activity {
         s.setAllowFileAccess(false);
         s.setAllowContentAccess(true);
         s.setSupportMultipleWindows(false);
-        s.setUserAgentString(s.getUserAgentString() + " ParsaChatApp/2.1.0");
+        s.setUserAgentString(s.getUserAgentString() + " ParsaChatApp/3.0.0");
         if (Build.VERSION.SDK_INT >= 29) s.setForceDark(WebSettings.FORCE_DARK_OFF); // app has its own themes
 
         final WebViewAssetLoader assetLoader = new WebViewAssetLoader.Builder()
@@ -192,13 +192,24 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
+        if (webView != null) {
+            // Let the client close its own overlays first (drawer, lightbox, dialogs…).
+            webView.evaluateJavascript("(window.__pcBack && window.__pcBack())", value -> {
+                if (!"true".equals(value)) defaultBack();
+            });
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    private void defaultBack() {
         if (webView != null && webView.canGoBack()) {
             webView.goBack();
             return;
         }
         long now = System.currentTimeMillis();
         if (now - lastBackPress < 2000) {
-            super.onBackPressed();
+            finish();
         } else {
             lastBackPress = now;
             Toast.makeText(this, R.string.back_to_exit, Toast.LENGTH_SHORT).show();
